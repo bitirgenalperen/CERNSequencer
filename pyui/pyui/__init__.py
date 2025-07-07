@@ -47,6 +47,17 @@ def _initialize_builtin_widgets():
     try:
         from .widgets.example_widget import StyledButton
         register_widget("StyledButton", StyledButton)
+        
+        # Register step widget base classes
+        from .widgets.step_widget_base import (
+            StepWidgetBase, ParameterStepWidget, TimingStepWidget,
+            EventStepWidget, DiagnosticStepWidget
+        )
+        register_widget("StepWidgetBase", StepWidgetBase)
+        register_widget("ParameterStepWidget", ParameterStepWidget)
+        register_widget("TimingStepWidget", TimingStepWidget)
+        register_widget("EventStepWidget", EventStepWidget)
+        register_widget("DiagnosticStepWidget", DiagnosticStepWidget)
     except ImportError:
         pass  # Widgets module not available
 
