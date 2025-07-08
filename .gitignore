@@ -167,3 +167,6 @@ tramp
 config.local.py
 settings.local.py
 local_settings.py 
+
+
+VISUAL_TESTING_CHECKLIST.md
