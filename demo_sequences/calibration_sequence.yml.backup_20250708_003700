@@ -1,0 +1,175 @@
+metadata:
+  name: "Detector Calibration Sequence"
+  description: "Precision calibration procedure for detector systems"
+  author: "CERN Detector Team"
+  version: "3.0.0"
+  category: "Calibration"
+  created_at: "2024-12-17T18:00:00Z"
+  modified_at: "2024-12-17T18:00:00Z"
+  tags:
+    - "calibration"
+    - "detector"
+    - "precision"
+    - "measurement"
+
+variables:
+  reference_voltage: "1000.0"
+  calibration_current: "50.0"
+  temperature_setpoint: "23.0"
+  precision_tolerance: "0.01"
+
+steps:
+  - step_id: "cal_001"
+    step_type: "LogMessage"
+    description: "Begin detector calibration"
+    enabled: true
+    parameters:
+      message: "Starting detector calibration sequence"
+      level: "INFO"
+    timeout: null
+    retry_count: 0
+
+  - step_id: "cal_002"
+    step_type: "SetParameter"
+    description: "Set environmental temperature"
+    enabled: true
+    parameters:
+      name: "chamber_temperature"
+      value: "23.0"
+      unit: "°C"
+    timeout: 60.0
+    retry_count: 1
+
+  - step_id: "cal_003"
+    step_type: "WaitForEvent"
+    description: "Wait for temperature stabilization"
+    enabled: true
+    parameters:
+      event_name: "temperature_stable"
+      timeout: 300.0
+    timeout: 360.0
+    retry_count: 1
+
+  - step_id: "cal_004"
+    step_type: "SetParameter"
+    description: "Set reference voltage"
+    enabled: true
+    parameters:
+      name: "reference_voltage"
+      value: "1000.0"
+      unit: "V"
+    timeout: 30.0
+    retry_count: 2
+
+  - step_id: "cal_005"
+    step_type: "Delay"
+    description: "Allow voltage stabilization"
+    enabled: true
+    parameters:
+      duration: 10.0
+      precision: "high"
+    timeout: null
+    retry_count: 0
+
+  - step_id: "cal_006"
+    step_type: "RunDiagnostic"
+    description: "Measure baseline response"
+    enabled: true
+    parameters:
+      diagnostic_name: "baseline_measurement"
+      parameters: "samples=1000,averaging=true"
+    timeout: 90.0
+    retry_count: 2
+
+  - step_id: "cal_007"
+    step_type: "SetParameter"
+    description: "Apply calibration current"
+    enabled: true
+    parameters:
+      name: "test_current"
+      value: "50.0"
+      unit: "μA"
+    timeout: 25.0
+    retry_count: 1
+
+  - step_id: "cal_008"
+    step_type: "Delay"
+    description: "Wait for current stabilization"
+    enabled: true
+    parameters:
+      duration: 5.0
+      precision: "high"
+    timeout: null
+    retry_count: 0
+
+  - step_id: "cal_009"
+    step_type: "RunDiagnostic"
+    description: "Measure calibration response"
+    enabled: true
+    parameters:
+      diagnostic_name: "calibration_measurement"
+      parameters: "samples=1000,current=50.0"
+    timeout: 120.0
+    retry_count: 2
+
+  - step_id: "cal_010"
+    step_type: "RunDiagnostic"
+    description: "Calculate calibration constants"
+    enabled: true
+    parameters:
+      diagnostic_name: "calibration_calculation"
+      parameters: "method=linear_fit,tolerance=0.01"
+    timeout: 30.0
+    retry_count: 1
+
+  - step_id: "cal_011"
+    step_type: "SetParameter"
+    description: "Apply calibration correction"
+    enabled: true
+    parameters:
+      name: "calibration_applied"
+      value: "true"
+      unit: ""
+    timeout: 15.0
+    retry_count: 1
+
+  - step_id: "cal_012"
+    step_type: "RunDiagnostic"
+    description: "Verify calibration accuracy"
+    enabled: true
+    parameters:
+      diagnostic_name: "calibration_verification"
+      parameters: "tolerance=0.01,test_points=10"
+    timeout: 180.0
+    retry_count: 2
+
+  - step_id: "cal_013"
+    step_type: "SetParameter"
+    description: "Reset test current"
+    enabled: true
+    parameters:
+      name: "test_current"
+      value: "0.0"
+      unit: "μA"
+    timeout: 20.0
+    retry_count: 1
+
+  - step_id: "cal_014"
+    step_type: "WaitForEvent"
+    description: "Wait for system return to normal"
+    enabled: true
+    parameters:
+      event_name: "calibration_complete"
+      timeout: 30.0
+    timeout: 45.0
+    retry_count: 1
+
+  - step_id: "cal_015"
+    step_type: "LogMessage"
+    description: "Calibration sequence completed"
+    enabled: true
+    parameters:
+      message: "Detector calibration sequence completed successfully"
+      level: "INFO"
+    timeout: null
+    retry_count: 0 

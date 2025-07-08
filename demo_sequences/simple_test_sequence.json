@@ -1,0 +1,91 @@
+{
+  "metadata": {
+    "name": "Simple Test Sequence",
+    "description": "Basic test sequence for validating sequencer functionality",
+    "author": "CERN Testing Team",
+    "version": "1.0.0",
+    "category": "Testing",
+    "created_at": "2024-12-17T20:00:00Z",
+    "modified_at": "2024-12-17T20:00:00Z",
+    "tags": ["test", "basic", "validation", "demo"]
+  },
+  "variables": {
+    "test_value": "100.0",
+    "delay_duration": "2.0"
+  },
+  "steps": [
+    {
+      "step_id": "test_001",
+      "step_type": "LogMessage",
+      "description": "Start test sequence",
+      "enabled": true,
+      "parameters": {
+        "message": "Starting simple test sequence",
+        "level": "INFO"
+      },
+      "timeout": null,
+      "retry_count": 0
+    },
+    {
+      "step_id": "test_002",
+      "step_type": "SetParameter",
+      "description": "Set test parameter",
+      "enabled": true,
+      "parameters": {
+        "name": "test_parameter",
+        "value": "100.0",
+        "unit": "units"
+      },
+      "timeout": 10.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "test_003",
+      "step_type": "Delay",
+      "description": "Wait for stabilization",
+      "enabled": true,
+      "parameters": {
+        "duration": 2.0,
+        "precision": "normal"
+      },
+      "timeout": null,
+      "retry_count": 0
+    },
+    {
+      "step_id": "test_004",
+      "step_type": "RunDiagnostic",
+      "description": "Run basic diagnostic",
+      "enabled": true,
+      "parameters": {
+        "diagnostic_name": "basic_test",
+        "parameters": "mode=simple"
+      },
+      "timeout": 30.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "test_005",
+      "step_type": "WaitForEvent",
+      "description": "Wait for test completion",
+      "enabled": true,
+      "parameters": {
+        "event_name": "test_complete",
+        "timeout": 15.0
+      },
+      "timeout": 20.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "test_006",
+      "step_type": "LogMessage",
+      "description": "Test sequence completed",
+      "enabled": true,
+      "parameters": {
+        "message": "Simple test sequence completed successfully",
+        "level": "INFO"
+      },
+      "timeout": null,
+      "retry_count": 0
+    }
+  ]
+} 

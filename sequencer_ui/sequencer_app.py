@@ -14,8 +14,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, 
                              QMenuBar, QMenu, QAction, QStatusBar, QToolBar,
-                             QSplitter, QTextEdit, QLabel, QFrame, QMessageBox)
-from PyQt5.QtCore import Qt, QSize
+                             QSplitter, QTextEdit, QLabel, QFrame, QMessageBox,
+                             QProgressBar, QGroupBox, QGridLayout, QPushButton)
+from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtGui import QIcon, QKeySequence
 
 from pyui.pyui import ApplicationBase
@@ -23,6 +24,7 @@ from pyui.pyui import get_widget
 from .sequence_editor import SequenceEditor
 from .sequence_data_model import create_example_sequence
 from .file_manager import FileManager
+from .sequence_executor import SequenceExecutor, ExecutionState, ExecutionMode
 
 
 class SequencerMainWindow(QMainWindow):
@@ -35,23 +37,35 @@ class SequencerMainWindow(QMainWindow):
         self.sequence_editor = None
         self.properties_content = None
         self.file_manager = None
+        self.sequence_executor = None
+        
+        # Execution status UI components
+        self.execution_status_frame = None
+        self.execution_progress_bar = None
+        self.execution_status_label = None
+        self.current_step_label = None
+        self.execution_stats_label = None
+        self.pause_btn = None
+        self.resume_btn = None
         
         self.setup_ui()
         self.setup_menu_bar()
         self.setup_toolbar()
         self.setup_status_bar()
         
-        # Initialize file manager
+        # Initialize file manager and sequence executor
         self.file_manager = FileManager(parent_widget=self)
+        self.sequence_executor = SequenceExecutor()
         
-        # Connect sequence editor signals
+        # Connect signals
         self.connect_sequence_editor_signals()
+        self.connect_executor_signals()
         
     def setup_ui(self):
         """Set up the main UI layout."""
         # Set window properties
         self.setWindowTitle("CERN Sequencer UI")
-        self.setMinimumSize(1000, 700)
+        self.setMinimumSize(1200, 800)
         
         # Create central widget with splitter layout
         central_widget = QWidget()
@@ -61,20 +75,31 @@ class SequencerMainWindow(QMainWindow):
         main_layout = QVBoxLayout(central_widget)
         main_layout.setContentsMargins(5, 5, 5, 5)
         
-        # Create horizontal splitter for main content
-        splitter = QSplitter(Qt.Horizontal)
-        main_layout.addWidget(splitter)
+        # Create vertical splitter for main content and execution status
+        main_splitter = QSplitter(Qt.Vertical)
+        main_layout.addWidget(main_splitter)
+        
+        # Create horizontal splitter for sequence editor and properties
+        content_splitter = QSplitter(Qt.Horizontal)
+        main_splitter.addWidget(content_splitter)
         
         # Left panel - Sequence Editor
         self.sequence_editor = SequenceEditor()
-        splitter.addWidget(self.sequence_editor)
+        content_splitter.addWidget(self.sequence_editor)
         
         # Right panel - Properties/Details
         self.properties_frame = self.create_properties_panel()
-        splitter.addWidget(self.properties_frame)
+        content_splitter.addWidget(self.properties_frame)
         
-        # Set splitter proportions (70% left, 30% right)
-        splitter.setSizes([700, 300])
+        # Set horizontal splitter proportions (70% left, 30% right)
+        content_splitter.setSizes([700, 300])
+        
+        # Bottom panel - Execution Status
+        self.execution_status_frame = self.create_execution_status_panel()
+        main_splitter.addWidget(self.execution_status_frame)
+        
+        # Set vertical splitter proportions (75% content, 25% execution status)
+        main_splitter.setSizes([600, 200])
         
     def create_properties_panel(self):
         """Create the properties/details panel."""
@@ -108,6 +133,76 @@ class SequencerMainWindow(QMainWindow):
         layout.addWidget(self.properties_content)
         
         return frame
+    
+    def create_execution_status_panel(self):
+        """Create the execution status panel."""
+        frame = QGroupBox("Sequence Execution Status")
+        frame.setMaximumHeight(220)
+        frame.setStyleSheet("""
+            QGroupBox {
+                font-size: 12px;
+                font-weight: bold;
+                color: #0066CC;
+                border: 2px solid #CCCCCC;
+                border-radius: 5px;
+                margin-top: 10px;
+                padding-top: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+            }
+        """)
+        
+        layout = QGridLayout(frame)
+        layout.setSpacing(8)
+        
+        # Row 0: Overall progress
+        layout.addWidget(QLabel("Progress:"), 0, 0)
+        self.execution_progress_bar = QProgressBar()
+        self.execution_progress_bar.setRange(0, 100)
+        self.execution_progress_bar.setValue(0)
+        self.execution_progress_bar.setFormat("%p% (%v/%m steps)")
+        layout.addWidget(self.execution_progress_bar, 0, 1, 1, 3)
+        
+        # Row 1: Execution status
+        layout.addWidget(QLabel("Status:"), 1, 0)
+        self.execution_status_label = QLabel("Ready")
+        self.execution_status_label.setStyleSheet("font-weight: bold; color: #0066CC;")
+        layout.addWidget(self.execution_status_label, 1, 1)
+        
+        # Row 2: Current step
+        layout.addWidget(QLabel("Current Step:"), 2, 0)
+        self.current_step_label = QLabel("None")
+        layout.addWidget(self.current_step_label, 2, 1, 1, 2)
+        
+        # Row 3: Execution statistics
+        layout.addWidget(QLabel("Statistics:"), 3, 0)
+        self.execution_stats_label = QLabel("Total: 0, Success: 0, Failed: 0")
+        layout.addWidget(self.execution_stats_label, 3, 1, 1, 2)
+        
+        # Get StyledButton from PyUI registry for execution control buttons
+        StyledButton = get_widget("StyledButton")
+        
+        if StyledButton:
+            # Pause button
+            self.pause_btn = StyledButton("Pause")
+            self.pause_btn.set_accent_color("#FFA500")  # Orange for pause
+            self.pause_btn.setToolTip("Pause execution")
+            self.pause_btn.setEnabled(False)
+            self.pause_btn.clicked.connect(self.on_pause_execution)
+            layout.addWidget(self.pause_btn, 1, 2)
+            
+            # Resume button
+            self.resume_btn = StyledButton("Resume")
+            self.resume_btn.set_accent_color("#00AA00")  # Green for resume
+            self.resume_btn.setToolTip("Resume execution")
+            self.resume_btn.setEnabled(False)
+            self.resume_btn.clicked.connect(self.on_resume_execution)
+            layout.addWidget(self.resume_btn, 1, 3)
+        
+        return frame
         
     def connect_sequence_editor_signals(self):
         """Connect sequence editor signals to update the UI."""
@@ -115,6 +210,26 @@ class SequencerMainWindow(QMainWindow):
             self.sequence_editor.sequence_changed.connect(self.on_sequence_changed)
             self.sequence_editor.sequence_loaded.connect(self.on_sequence_loaded)
             self.sequence_editor.step_selected.connect(self.on_step_selected)
+    
+    def connect_executor_signals(self):
+        """Connect sequence executor signals to update the UI."""
+        if self.sequence_executor:
+            # Execution lifecycle signals
+            self.sequence_executor.execution_started.connect(self.on_execution_started)
+            self.sequence_executor.execution_completed.connect(self.on_execution_completed)
+            self.sequence_executor.execution_failed.connect(self.on_execution_failed)
+            self.sequence_executor.execution_paused.connect(self.on_execution_paused)
+            self.sequence_executor.execution_resumed.connect(self.on_execution_resumed)
+            self.sequence_executor.execution_stopped.connect(self.on_execution_stopped)
+            
+            # Step execution signals
+            self.sequence_executor.step_started.connect(self.on_step_started)
+            self.sequence_executor.step_completed.connect(self.on_step_completed)
+            self.sequence_executor.step_failed.connect(self.on_step_failed)
+            
+            # Progress and status signals
+            self.sequence_executor.progress_updated.connect(self.on_progress_updated)
+            self.sequence_executor.status_message.connect(self.on_executor_status_message)
         
     def setup_menu_bar(self):
         """Set up the application menu bar."""
@@ -208,6 +323,22 @@ class SequencerMainWindow(QMainWindow):
         self.stop_action.setEnabled(False)  # Disabled by default
         self.stop_action.triggered.connect(self.on_stop_sequence)
         sequence_menu.addAction(self.stop_action)
+        
+        # Pause action
+        self.pause_action = QAction('&Pause Execution', self)
+        self.pause_action.setShortcut('Ctrl+P')
+        self.pause_action.setStatusTip('Pause sequence execution')
+        self.pause_action.setEnabled(False)
+        self.pause_action.triggered.connect(self.on_pause_execution)
+        sequence_menu.addAction(self.pause_action)
+        
+        # Resume action
+        self.resume_action = QAction('&Resume Execution', self)
+        self.resume_action.setShortcut('Ctrl+R')
+        self.resume_action.setStatusTip('Resume sequence execution')
+        self.resume_action.setEnabled(False)
+        self.resume_action.triggered.connect(self.on_resume_execution)
+        sequence_menu.addAction(self.resume_action)
         
         sequence_menu.addSeparator()
         
@@ -520,32 +651,65 @@ class SequencerMainWindow(QMainWindow):
         
     def on_run_sequence(self):
         """Handle run sequence action."""
-        if self.sequence_editor:
-            if not self.sequence_editor.has_steps():
-                QMessageBox.warning(self, "No Steps", "Cannot run an empty sequence. Please add some steps first.")
-                return
-                
-            # Validate before running
-            is_valid, errors = self.sequence_editor.validate_sequence()
-            if not is_valid:
-                reply = QMessageBox.question(
-                    self, "Invalid Sequence", 
-                    f"The sequence has validation errors:\n\n{chr(10).join(errors)}\n\nDo you want to run anyway?",
-                    QMessageBox.Yes | QMessageBox.No,
-                    QMessageBox.No
-                )
-                if reply != QMessageBox.Yes:
-                    return
+        if not self.sequence_editor or not self.sequence_executor:
+            return
             
-            self.status_bar.showMessage("Run sequence action triggered (execution engine not implemented yet)")
-            self.stop_btn.setEnabled(True)
-            self.stop_action.setEnabled(True)
+        if not self.sequence_editor.has_steps():
+            QMessageBox.warning(self, "No Steps", "Cannot run an empty sequence. Please add some steps first.")
+            return
+            
+        # Check if executor is busy
+        if self.sequence_executor.state != ExecutionState.IDLE:
+            QMessageBox.warning(self, "Execution In Progress", 
+                              f"Cannot start execution: executor is {self.sequence_executor.state.value}")
+            return
+            
+        # Validate before running
+        is_valid, errors = self.sequence_editor.validate_sequence()
+        if not is_valid:
+            reply = QMessageBox.question(
+                self, "Invalid Sequence", 
+                f"The sequence has validation errors:\n\n{chr(10).join(errors)}\n\nDo you want to run anyway?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if reply != QMessageBox.Yes:
+                return
+        
+        # Get sequence data and start execution
+        sequence_data = self.sequence_editor.get_sequence_data()
+        if sequence_data:
+            success = self.sequence_executor.execute_sequence(
+                sequence_data,
+                mode=ExecutionMode.NORMAL,
+                continue_on_error=False
+            )
+            
+            if success:
+                self.status_bar.showMessage("Sequence execution started")
+                # UI updates will be handled by executor signals
+            else:
+                QMessageBox.critical(self, "Execution Failed", "Failed to start sequence execution")
         
     def on_stop_sequence(self):
         """Handle stop sequence action."""
-        self.status_bar.showMessage("Stop sequence action triggered (execution engine not implemented yet)")
-        self.stop_btn.setEnabled(False)
-        self.stop_action.setEnabled(False)
+        if self.sequence_executor and self.sequence_executor.state in [ExecutionState.RUNNING, ExecutionState.PAUSED]:
+            self.sequence_executor.stop_execution()
+            self.status_bar.showMessage("Stop requested...")
+        else:
+            self.status_bar.showMessage("No execution to stop")
+    
+    def on_pause_execution(self):
+        """Handle pause execution action."""
+        if self.sequence_executor and self.sequence_executor.state == ExecutionState.RUNNING:
+            self.sequence_executor.pause_execution()
+            self.status_bar.showMessage("Pause requested...")
+    
+    def on_resume_execution(self):
+        """Handle resume execution action."""
+        if self.sequence_executor and self.sequence_executor.state == ExecutionState.PAUSED:
+            self.sequence_executor.resume_execution()
+            self.status_bar.showMessage("Resume requested...")
         
     def on_add_parameter_step(self):
         """Handle add parameter step action."""
@@ -600,6 +764,156 @@ class SequencerMainWindow(QMainWindow):
                     self.status_bar.showMessage("Failed to export sequence as YAML")
             else:
                 self.status_bar.showMessage("No sequence to export")
+    
+    # Executor signal handlers
+    def on_execution_started(self, sequence_id: str):
+        """Handle execution started signal."""
+        self.execution_status_label.setText("RUNNING")
+        self.execution_status_label.setStyleSheet("font-weight: bold; color: #00AA00;")
+        self.current_step_label.setText("Initializing...")
+        
+        # Update button and menu states
+        self.stop_btn.setEnabled(True)
+        self.stop_action.setEnabled(True)
+        self.pause_btn.setEnabled(True)
+        self.pause_action.setEnabled(True)
+        self.resume_btn.setEnabled(False)
+        self.resume_action.setEnabled(False)
+        
+        # Reset progress
+        self.execution_progress_bar.setValue(0)
+        self.execution_stats_label.setText("Total: 0, Success: 0, Failed: 0")
+        
+        self.status_bar.showMessage("Sequence execution started")
+    
+    def on_execution_completed(self, sequence_id: str, success: bool):
+        """Handle execution completed signal."""
+        if success:
+            self.execution_status_label.setText("COMPLETED")
+            self.execution_status_label.setStyleSheet("font-weight: bold; color: #00AA00;")
+            self.status_bar.showMessage("Sequence execution completed successfully")
+        else:
+            self.execution_status_label.setText("FAILED")
+            self.execution_status_label.setStyleSheet("font-weight: bold; color: #CC0000;")
+            self.status_bar.showMessage("Sequence execution completed with errors")
+        
+        self.current_step_label.setText("None")
+        
+        # Update button and menu states
+        self.stop_btn.setEnabled(False)
+        self.stop_action.setEnabled(False)
+        self.pause_btn.setEnabled(False)
+        self.pause_action.setEnabled(False)
+        self.resume_btn.setEnabled(False)
+        self.resume_action.setEnabled(False)
+        
+        # Update final statistics
+        self.update_execution_statistics()
+    
+    def on_execution_failed(self, sequence_id: str, error_message: str):
+        """Handle execution failed signal."""
+        self.execution_status_label.setText("FAILED")
+        self.execution_status_label.setStyleSheet("font-weight: bold; color: #CC0000;")
+        self.current_step_label.setText("Error occurred")
+        
+        # Update button and menu states
+        self.stop_btn.setEnabled(False)
+        self.stop_action.setEnabled(False)
+        self.pause_btn.setEnabled(False)
+        self.pause_action.setEnabled(False)
+        self.resume_btn.setEnabled(False)
+        self.resume_action.setEnabled(False)
+        
+        self.status_bar.showMessage(f"Execution failed: {error_message}")
+        
+        # Show error dialog
+        QMessageBox.critical(self, "Execution Failed", f"Sequence execution failed:\n\n{error_message}")
+    
+    def on_execution_paused(self, sequence_id: str):
+        """Handle execution paused signal."""
+        self.execution_status_label.setText("PAUSED")
+        self.execution_status_label.setStyleSheet("font-weight: bold; color: #FFA500;")
+        
+        # Update button and menu states
+        self.pause_btn.setEnabled(False)
+        self.pause_action.setEnabled(False)
+        self.resume_btn.setEnabled(True)
+        self.resume_action.setEnabled(True)
+        
+        self.status_bar.showMessage("Sequence execution paused")
+    
+    def on_execution_resumed(self, sequence_id: str):
+        """Handle execution resumed signal."""
+        self.execution_status_label.setText("RUNNING")
+        self.execution_status_label.setStyleSheet("font-weight: bold; color: #00AA00;")
+        
+        # Update button and menu states
+        self.pause_btn.setEnabled(True)
+        self.pause_action.setEnabled(True)
+        self.resume_btn.setEnabled(False)
+        self.resume_action.setEnabled(False)
+        
+        self.status_bar.showMessage("Sequence execution resumed")
+    
+    def on_execution_stopped(self, sequence_id: str):
+        """Handle execution stopped signal."""
+        self.execution_status_label.setText("STOPPED")
+        self.execution_status_label.setStyleSheet("font-weight: bold; color: #CC0000;")
+        self.current_step_label.setText("None")
+        
+        # Update button and menu states
+        self.stop_btn.setEnabled(False)
+        self.stop_action.setEnabled(False)
+        self.pause_btn.setEnabled(False)
+        self.pause_action.setEnabled(False)
+        self.resume_btn.setEnabled(False)
+        self.resume_action.setEnabled(False)
+        
+        self.status_bar.showMessage("Sequence execution stopped")
+    
+    def on_step_started(self, sequence_id: str, step_id: str, step_index: int):
+        """Handle step started signal."""
+        if self.sequence_editor:
+            sequence_data = self.sequence_editor.get_sequence_data()
+            if sequence_data and step_index < len(sequence_data.steps):
+                step = sequence_data.steps[step_index]
+                step_text = f"Step {step_index + 1}: {step.step_type.value}"
+                if step.description:
+                    step_text += f" - {step.description[:50]}..."
+                
+                self.current_step_label.setText(step_text)
+    
+    def on_step_completed(self, sequence_id: str, step_id: str, success: bool, execution_time: float):
+        """Handle step completed signal."""
+        self.update_execution_statistics()
+        
+        if not success:
+            # Brief visual indication of step failure
+            self.current_step_label.setStyleSheet("color: #CC0000;")
+            QTimer.singleShot(2000, lambda: self.current_step_label.setStyleSheet(""))
+    
+    def on_step_failed(self, sequence_id: str, step_id: str, error_message: str):
+        """Handle step failed signal."""
+        self.update_execution_statistics()
+        self.current_step_label.setStyleSheet("color: #CC0000;")
+        QTimer.singleShot(3000, lambda: self.current_step_label.setStyleSheet(""))
+    
+    def on_progress_updated(self, sequence_id: str, current_step: int, total_steps: int, progress_percent: float):
+        """Handle progress updated signal."""
+        self.execution_progress_bar.setMaximum(total_steps)
+        self.execution_progress_bar.setValue(current_step)
+        self.execution_progress_bar.setFormat(f"{progress_percent:.1f}% ({current_step}/{total_steps} steps)")
+    
+    def on_executor_status_message(self, message: str):
+        """Handle executor status message signal."""
+        self.status_bar.showMessage(message)
+    
+    def update_execution_statistics(self):
+        """Update the execution statistics display."""
+        if self.sequence_executor:
+            status = self.sequence_executor.get_execution_status()
+            stats_text = f"Total: {status['total_steps_executed']}, Success: {status['successful_steps']}, Failed: {status['failed_steps']}"
+            self.execution_stats_label.setText(stats_text)
                 
     def on_open_recent_file(self, file_path: str):
         """Handle opening a recent file."""

@@ -1,0 +1,144 @@
+metadata:
+  name: "Particle Physics Experiment"
+  description: "Complete sequence for high-energy particle collision experiment"
+  author: "CERN Physics Team"
+  version: "2.1.0"
+  category: "Physics"
+  created_at: "2024-12-17T14:30:00Z"
+  modified_at: "2024-12-17T14:30:00Z"
+  tags: 
+    - "physics"
+    - "collision"
+    - "high_energy"
+    - "experiment"
+
+variables:
+  collision_energy: "13000.0"
+  luminosity_target: "2.0e34"
+  detector_voltage: "2500.0"
+  magnetic_field: "3.8"
+
+steps:
+  - step_id: "phys_001"
+    step_type: "LogMessage"
+    description: "Initialize particle physics experiment"
+    enabled: true
+    parameters:
+      message: "Starting particle physics experiment sequence"
+      level: "INFO"
+    timeout: null
+    retry_count: 0
+
+  - step_id: "phys_002"
+    step_type: "SetParameter"
+    description: "Set collision energy to 13 TeV"
+    enabled: true
+    parameters:
+      name: "collision_energy"
+      value: "13000.0"
+      unit: "GeV"
+    timeout: 45.0
+    retry_count: 2
+
+  - step_id: "phys_003"
+    step_type: "SetParameter"
+    description: "Configure detector high voltage"
+    enabled: true
+    parameters:
+      name: "detector_hv"
+      value: "2500.0"
+      unit: "V"
+    timeout: 30.0
+    retry_count: 1
+
+  - step_id: "phys_004"
+    step_type: "Delay"
+    description: "Allow detector stabilization"
+    enabled: true
+    parameters:
+      duration: 5.0
+      precision: "high"
+    timeout: null
+    retry_count: 0
+
+  - step_id: "phys_005"
+    step_type: "RunDiagnostic"
+    description: "Verify detector readiness"
+    enabled: true
+    parameters:
+      diagnostic_name: "detector_status_check"
+      parameters: "mode=full,threshold=0.95"
+    timeout: 60.0
+    retry_count: 3
+
+  - step_id: "phys_006"
+    step_type: "SetParameter"
+    description: "Set magnetic field strength"
+    enabled: true
+    parameters:
+      name: "solenoid_field"
+      value: "3.8"
+      unit: "T"
+    timeout: 40.0
+    retry_count: 1
+
+  - step_id: "phys_007"
+    step_type: "WaitForEvent"
+    description: "Wait for beam injection completion"
+    enabled: true
+    parameters:
+      event_name: "beam_injection_complete"
+      timeout: 120.0
+    timeout: 150.0
+    retry_count: 1
+
+  - step_id: "phys_008"
+    step_type: "SetParameter"
+    description: "Set target luminosity"
+    enabled: true
+    parameters:
+      name: "luminosity"
+      value: "2.0e34"
+      unit: "cm^-2*s^-1"
+    timeout: 35.0
+    retry_count: 2
+
+  - step_id: "phys_009"
+    step_type: "Delay"
+    description: "Ramp up to stable collisions"
+    enabled: true
+    parameters:
+      duration: 10.0
+      precision: "normal"
+    timeout: null
+    retry_count: 0
+
+  - step_id: "phys_010"
+    step_type: "WaitForEvent"
+    description: "Wait for stable collision rate"
+    enabled: true
+    parameters:
+      event_name: "collision_rate_stable"
+      timeout: 60.0
+    timeout: 90.0
+    retry_count: 2
+
+  - step_id: "phys_011"
+    step_type: "RunDiagnostic"
+    description: "Monitor collision quality"
+    enabled: true
+    parameters:
+      diagnostic_name: "collision_quality_check"
+      parameters: "duration=30,quality_threshold=0.9"
+    timeout: 45.0
+    retry_count: 1
+
+  - step_id: "phys_012"
+    step_type: "LogMessage"
+    description: "Experiment ready for data taking"
+    enabled: true
+    parameters:
+      message: "Particle physics experiment ready - data acquisition can begin"
+      level: "INFO"
+    timeout: null
+    retry_count: 0 

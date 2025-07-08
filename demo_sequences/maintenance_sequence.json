@@ -1,0 +1,166 @@
+{
+  "metadata": {
+    "name": "Accelerator Maintenance Sequence",
+    "description": "Routine maintenance and diagnostic checks for accelerator components",
+    "author": "CERN Operations Team",
+    "version": "1.5.0",
+    "category": "Maintenance",
+    "created_at": "2024-12-17T16:00:00Z",
+    "modified_at": "2024-12-17T16:00:00Z",
+    "tags": ["maintenance", "diagnostic", "routine", "safety"]
+  },
+  "variables": {
+    "safe_current": "10.0",
+    "diagnostic_timeout": "300.0",
+    "cooldown_temperature": "20.0"
+  },
+  "steps": [
+    {
+      "step_id": "maint_001",
+      "step_type": "LogMessage",
+      "description": "Begin maintenance sequence",
+      "enabled": true,
+      "parameters": {
+        "message": "Starting scheduled maintenance sequence",
+        "level": "INFO"
+      },
+      "timeout": null,
+      "retry_count": 0
+    },
+    {
+      "step_id": "maint_002",
+      "step_type": "SetParameter",
+      "description": "Set systems to safe mode",
+      "enabled": true,
+      "parameters": {
+        "name": "system_mode",
+        "value": "safe",
+        "unit": ""
+      },
+      "timeout": 15.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "maint_003",
+      "step_type": "SetParameter",
+      "description": "Reduce current to safe levels",
+      "enabled": true,
+      "parameters": {
+        "name": "beam_current",
+        "value": "10.0",
+        "unit": "mA"
+      },
+      "timeout": 30.0,
+      "retry_count": 2
+    },
+    {
+      "step_id": "maint_004",
+      "step_type": "WaitForEvent",
+      "description": "Wait for beam dump completion",
+      "enabled": true,
+      "parameters": {
+        "event_name": "beam_dump_complete",
+        "timeout": 45.0
+      },
+      "timeout": 60.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "maint_005",
+      "step_type": "Delay",
+      "description": "Allow system cooldown",
+      "enabled": true,
+      "parameters": {
+        "duration": 15.0,
+        "precision": "normal"
+      },
+      "timeout": null,
+      "retry_count": 0
+    },
+    {
+      "step_id": "maint_006",
+      "step_type": "RunDiagnostic",
+      "description": "Check magnet temperatures",
+      "enabled": true,
+      "parameters": {
+        "diagnostic_name": "magnet_temperature_check",
+        "parameters": "max_temp=50.0,sectors=all"
+      },
+      "timeout": 120.0,
+      "retry_count": 2
+    },
+    {
+      "step_id": "maint_007",
+      "step_type": "RunDiagnostic",
+      "description": "Verify vacuum system integrity",
+      "enabled": true,
+      "parameters": {
+        "diagnostic_name": "vacuum_integrity_test",
+        "parameters": "pressure_threshold=1e-9"
+      },
+      "timeout": 180.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "maint_008",
+      "step_type": "RunDiagnostic",
+      "description": "Test RF system components",
+      "enabled": true,
+      "parameters": {
+        "diagnostic_name": "rf_system_test",
+        "parameters": "power_sweep=true,frequency_check=true"
+      },
+      "timeout": 240.0,
+      "retry_count": 2
+    },
+    {
+      "step_id": "maint_009",
+      "step_type": "SetParameter",
+      "description": "Test cooling system flow",
+      "enabled": true,
+      "parameters": {
+        "name": "cooling_flow_test",
+        "value": "enabled",
+        "unit": ""
+      },
+      "timeout": 20.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "maint_010",
+      "step_type": "WaitForEvent",
+      "description": "Wait for cooling system response",
+      "enabled": true,
+      "parameters": {
+        "event_name": "cooling_flow_nominal",
+        "timeout": 30.0
+      },
+      "timeout": 40.0,
+      "retry_count": 2
+    },
+    {
+      "step_id": "maint_011",
+      "step_type": "RunDiagnostic",
+      "description": "Comprehensive system health check",
+      "enabled": true,
+      "parameters": {
+        "diagnostic_name": "full_system_health",
+        "parameters": "mode=comprehensive,log_level=detailed"
+      },
+      "timeout": 300.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "maint_012",
+      "step_type": "LogMessage",
+      "description": "Maintenance sequence completed",
+      "enabled": true,
+      "parameters": {
+        "message": "Scheduled maintenance sequence completed successfully",
+        "level": "INFO"
+      },
+      "timeout": null,
+      "retry_count": 0
+    }
+  ]
+} 

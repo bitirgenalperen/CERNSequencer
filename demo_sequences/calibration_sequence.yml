@@ -1,0 +1,219 @@
+metadata:
+  author: CERN Detector Team
+  category: Calibration
+  created_at: '2024-12-17T18:00:00Z'
+  description: Precision calibration procedure for detector systems
+  modified_at: '2025-07-08T00:37:25.161462'
+  name: Detector Calibration Sequence
+  tags:
+  - calibration
+  - detector
+  - precision
+  - measurement
+  version: 3.0.0
+sequence_id: 86e989a2-a900-4685-9474-3052c5d5b3c2
+steps:
+- created_at: '2025-07-08T00:36:50.952630'
+  description: Begin detector calibration
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    level: INFO
+    message: Starting detector calibration sequence
+  retry_count: 0
+  status: pending
+  step_id: cal_001
+  step_type: LogMessage
+  timeout: null
+- created_at: '2025-07-08T00:36:50.952647'
+  description: Set environmental temperature
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    name: chamber_temperature
+    unit: °C
+    value: '23.0'
+  retry_count: 1
+  status: pending
+  step_id: cal_002
+  step_type: SetParameter
+  timeout: 60.0
+- created_at: '2025-07-08T00:36:50.952651'
+  description: ''
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    event_name: temperature_stable
+    timeout: 30.0
+  retry_count: 1
+  status: pending
+  step_id: cal_003
+  step_type: WaitForEvent
+  timeout: 360.0
+- created_at: '2025-07-08T00:36:50.952655'
+  description: ''
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    name: reference_voltage
+    value: '1000.0'
+  retry_count: 2
+  status: pending
+  step_id: cal_004
+  step_type: SetParameter
+  timeout: 30.0
+- created_at: '2025-07-08T00:36:50.952658'
+  description: Allow voltage stabilization
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    duration: 10.0
+    precision: high
+  retry_count: 0
+  status: pending
+  step_id: cal_005
+  step_type: Delay
+  timeout: null
+- created_at: '2025-07-08T00:36:50.952660'
+  description: Measure baseline response
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    diagnostic_name: baseline_measurement
+    parameters: samples=1000,averaging=true
+  retry_count: 2
+  status: pending
+  step_id: cal_006
+  step_type: RunDiagnostic
+  timeout: 90.0
+- created_at: '2025-07-08T00:36:50.952663'
+  description: Apply calibration current
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    name: test_current
+    unit: μA
+    value: '50.0'
+  retry_count: 1
+  status: pending
+  step_id: cal_007
+  step_type: SetParameter
+  timeout: 25.0
+- created_at: '2025-07-08T00:36:50.952665'
+  description: Wait for current stabilization
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    duration: 5.0
+    precision: high
+  retry_count: 0
+  status: pending
+  step_id: cal_008
+  step_type: Delay
+  timeout: null
+- created_at: '2025-07-08T00:36:50.952668'
+  description: Measure calibration response
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    diagnostic_name: calibration_measurement
+    parameters: samples=1000,current=50.0
+  retry_count: 2
+  status: pending
+  step_id: cal_009
+  step_type: RunDiagnostic
+  timeout: 120.0
+- created_at: '2025-07-08T00:36:50.952670'
+  description: Calculate calibration constants
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    diagnostic_name: calibration_calculation
+    parameters: method=linear_fit,tolerance=0.01
+  retry_count: 1
+  status: pending
+  step_id: cal_010
+  step_type: RunDiagnostic
+  timeout: 30.0
+- created_at: '2025-07-08T00:36:50.952673'
+  description: Apply calibration correction
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    name: calibration_applied
+    unit: ''
+    value: 'true'
+  retry_count: 1
+  status: pending
+  step_id: cal_011
+  step_type: SetParameter
+  timeout: 15.0
+- created_at: '2025-07-08T00:36:50.952675'
+  description: Verify calibration accuracy
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    diagnostic_name: calibration_verification
+    parameters: tolerance=0.01,test_points=10
+  retry_count: 2
+  status: pending
+  step_id: cal_012
+  step_type: RunDiagnostic
+  timeout: 180.0
+- created_at: '2025-07-08T00:36:50.952678'
+  description: Reset test current
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    name: test_current
+    unit: μA
+    value: '0.0'
+  retry_count: 1
+  status: pending
+  step_id: cal_013
+  step_type: SetParameter
+  timeout: 20.0
+- created_at: '2025-07-08T00:36:50.952680'
+  description: ''
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    event_name: calibration_complete
+    timeout: 10.0
+  retry_count: 1
+  status: pending
+  step_id: cal_014
+  step_type: WaitForEvent
+  timeout: 45.0
+- created_at: '2025-07-08T00:36:50.952682'
+  description: Calibration sequence completed
+  enabled: true
+  error_message: null
+  execution_time: null
+  parameters:
+    level: INFO
+    message: Detector calibration sequence completed successfully
+  retry_count: 0
+  status: pending
+  step_id: cal_015
+  step_type: LogMessage
+  timeout: null
+variables:
+  calibration_current: '50.0'
+  precision_tolerance: '0.01'
+  reference_voltage: '1000.0'
+  temperature_setpoint: '23.0'

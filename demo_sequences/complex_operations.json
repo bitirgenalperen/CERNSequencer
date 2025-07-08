@@ -1,0 +1,231 @@
+{
+  "metadata": {
+    "name": "Complex Operations Sequence",
+    "description": "Advanced operational sequence demonstrating complex accelerator procedures",
+    "author": "CERN Advanced Operations Team",
+    "version": "2.5.0",
+    "category": "Operations",
+    "created_at": "2024-12-17T22:00:00Z",
+    "modified_at": "2024-12-17T22:00:00Z",
+    "tags": ["complex", "operations", "advanced", "multi-stage", "production"]
+  },
+  "variables": {
+    "primary_energy": "6500.0",
+    "secondary_energy": "6500.0",
+    "crossing_angle": "590.0",
+    "beta_star": "0.55",
+    "bunch_intensity": "1.15e11"
+  },
+  "steps": [
+    {
+      "step_id": "ops_001",
+      "step_type": "LogMessage",
+      "description": "Initialize complex operations sequence",
+      "enabled": true,
+      "parameters": {
+        "message": "Starting complex operations sequence - High Energy Physics Run",
+        "level": "INFO"
+      },
+      "timeout": null,
+      "retry_count": 0
+    },
+    {
+      "step_id": "ops_002",
+      "step_type": "SetParameter",
+      "description": "Configure beam 1 energy",
+      "enabled": true,
+      "parameters": {
+        "name": "beam1_energy",
+        "value": "6500.0",
+        "unit": "GeV"
+      },
+      "timeout": 60.0,
+      "retry_count": 3
+    },
+    {
+      "step_id": "ops_003",
+      "step_type": "SetParameter",
+      "description": "Configure beam 2 energy",
+      "enabled": true,
+      "parameters": {
+        "name": "beam2_energy",
+        "value": "6500.0",
+        "unit": "GeV"
+      },
+      "timeout": 60.0,
+      "retry_count": 3
+    },
+    {
+      "step_id": "ops_004",
+      "step_type": "WaitForEvent",
+      "description": "Wait for energy ramp completion",
+      "enabled": true,
+      "parameters": {
+        "event_name": "energy_ramp_complete",
+        "timeout": 300.0
+      },
+      "timeout": 360.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "ops_005",
+      "step_type": "RunDiagnostic",
+      "description": "Verify beam energy stability",
+      "enabled": true,
+      "parameters": {
+        "diagnostic_name": "beam_energy_stability",
+        "parameters": "tolerance=0.01,duration=60"
+      },
+      "timeout": 90.0,
+      "retry_count": 2
+    },
+    {
+      "step_id": "ops_006",
+      "step_type": "SetParameter",
+      "description": "Set crossing angle",
+      "enabled": true,
+      "parameters": {
+        "name": "crossing_angle",
+        "value": "590.0",
+        "unit": "μrad"
+      },
+      "timeout": 45.0,
+      "retry_count": 2
+    },
+    {
+      "step_id": "ops_007",
+      "step_type": "SetParameter",
+      "description": "Configure beta* optics",
+      "enabled": true,
+      "parameters": {
+        "name": "beta_star",
+        "value": "0.55",
+        "unit": "m"
+      },
+      "timeout": 120.0,
+      "retry_count": 2
+    },
+    {
+      "step_id": "ops_008",
+      "step_type": "Delay",
+      "description": "Allow optics stabilization",
+      "enabled": true,
+      "parameters": {
+        "duration": 20.0,
+        "precision": "high"
+      },
+      "timeout": null,
+      "retry_count": 0
+    },
+    {
+      "step_id": "ops_009",
+      "step_type": "RunDiagnostic",
+      "description": "Validate optics configuration",
+      "enabled": true,
+      "parameters": {
+        "diagnostic_name": "optics_validation",
+        "parameters": "mode=full,tolerance=0.005"
+      },
+      "timeout": 180.0,
+      "retry_count": 2
+    },
+    {
+      "step_id": "ops_010",
+      "step_type": "SetParameter",
+      "description": "Set bunch intensity",
+      "enabled": true,
+      "parameters": {
+        "name": "bunch_intensity",
+        "value": "1.15e11",
+        "unit": "protons/bunch"
+      },
+      "timeout": 30.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "ops_011",
+      "step_type": "RunDiagnostic",
+      "description": "Measure bunch-by-bunch intensity",
+      "enabled": true,
+      "parameters": {
+        "diagnostic_name": "bunch_intensity_measurement",
+        "parameters": "bunches=all,precision=high"
+      },
+      "timeout": 150.0,
+      "retry_count": 2
+    },
+    {
+      "step_id": "ops_012",
+      "step_type": "WaitForEvent",
+      "description": "Wait for orbit correction",
+      "enabled": true,
+      "parameters": {
+        "event_name": "orbit_correction_complete",
+        "timeout": 180.0
+      },
+      "timeout": 240.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "ops_013",
+      "step_type": "RunDiagnostic",
+      "description": "Final beam quality check",
+      "enabled": true,
+      "parameters": {
+        "diagnostic_name": "beam_quality_assessment",
+        "parameters": "emittance=true,lifetime=true,losses=true"
+      },
+      "timeout": 300.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "ops_014",
+      "step_type": "SetParameter",
+      "description": "Enable collision optimization",
+      "enabled": true,
+      "parameters": {
+        "name": "collision_optimization",
+        "value": "enabled",
+        "unit": ""
+      },
+      "timeout": 60.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "ops_015",
+      "step_type": "WaitForEvent",
+      "description": "Wait for luminosity optimization",
+      "enabled": true,
+      "parameters": {
+        "event_name": "luminosity_optimized",
+        "timeout": 600.0
+      },
+      "timeout": 720.0,
+      "retry_count": 1
+    },
+    {
+      "step_id": "ops_016",
+      "step_type": "RunDiagnostic",
+      "description": "Verify peak luminosity achieved",
+      "enabled": true,
+      "parameters": {
+        "diagnostic_name": "luminosity_verification",
+        "parameters": "target=2.0e34,tolerance=0.1"
+      },
+      "timeout": 120.0,
+      "retry_count": 2
+    },
+    {
+      "step_id": "ops_017",
+      "step_type": "LogMessage",
+      "description": "Complex operations sequence completed",
+      "enabled": true,
+      "parameters": {
+        "message": "Complex operations sequence completed - Ready for physics data taking",
+        "level": "INFO"
+      },
+      "timeout": null,
+      "retry_count": 0
+    }
+  ]
+} 

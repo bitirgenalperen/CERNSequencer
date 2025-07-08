@@ -30,16 +30,20 @@ pip install pyqt5 pytest pyyaml
 ## 2. Running the Applications
 
 - **PyUI Framework:**
-  - PyUI is a library/framework. To run its examples or test its widgets, navigate to the relevant example or test script (to be provided in the codebase) and run:
+  - PyUI is a library/framework. To run its examples or test its widgets:
     ```bash
-    python path/to/example_script.py
+    python pyui/hello_world_example.py
+    python pyui/example_app.py
     ```
 - **Sequencer UI Application:**
-  - Once implemented, you can start the Sequencer UI with:
+  - Start the main Sequencer UI application:
     ```bash
-    python path/to/sequencer_app.py
+    python sequencer_ui/sequencer_app.py
     ```
-  - Replace `path/to/sequencer_app.py` with the actual path to the main application script.
+  - Or use the run script for easy access:
+    ```bash
+    python run_sequencer.py
+    ```
 
 ## 3. Running Tests
 
@@ -48,14 +52,49 @@ To run all tests (using pytest):
 pytest
 ```
 
-## 4. Deactivating the Virtual Environment
+## 4. Basic Usage Guide
+
+### Creating and Running Sequences
+
+**Start the Application:**
+```bash
+python run_sequencer.py              # Basic startup
+python run_sequencer.py --demo       # Load demo sequence
+python run_sequencer.py --load file.json  # Load specific sequence
+```
+
+**Create a New Sequence:**
+1. Click "New Sequence" or press Ctrl+N
+2. Add steps using the toolbar buttons or "Sequence" → "Add Step" menu
+3. Configure each step's parameters in the sequence editor
+4. Available step types: Set Parameter, Wait for Event, Delay, Run Diagnostic, Log Message
+
+**Save and Load Sequences:**
+- **Save:** Click "Save" or press Ctrl+S to save current sequence
+- **Load:** Click "Open" or press Ctrl+O to load existing sequence
+- **Demo:** Click "Example" to load a demonstration sequence
+- **Formats:** Supports JSON and YAML file formats
+
+**Execute Sequences:**
+1. Click the green "Run" button or press F5 to start execution
+2. Monitor progress in the "Execution Status" panel at the bottom
+3. Use execution controls:
+   - **Pause** (Ctrl+P): Pause execution
+   - **Resume** (Ctrl+R): Resume from pause
+   - **Stop** (F6): Terminate execution
+4. View real-time progress, current step, and execution statistics
+
+**Demo Sequence:**
+A ready-to-use demo sequence is available at `demo_sequences/beam_setup_demo.json` showcasing typical CERN accelerator operations including beam energy setup, magnet configuration, and diagnostic checks.
+
+## 5. Deactivating the Virtual Environment
 
 When you are done, you can deactivate the environment with:
 ```bash
 deactivate
 ```
 
-## 5. Project Directory Structure (Milestone 1)
+## 6. Project Directory Structure (Milestone 1)
 
 Below is the initial file and directory structure for the MVP, as established in Milestone 1. Each part is explained to help you navigate and contribute to the project:
 
@@ -63,31 +102,41 @@ Below is the initial file and directory structure for the MVP, as established in
 CERNSequencer/
 │
 ├── pyui/
+│   ├── hello_world_example.py         # Hello World PyUI example
+│   ├── example_app.py                 # Complete PyUI example application
 │   └── pyui/
-│       ├── __init__.py                # Marks the package; shared logic for PyUI
-│       ├── application_base.py        # Base class for PyUI-based applications
-│       ├── widgets/
-│       │   ├── __init__.py            # Marks widgets as a subpackage
-│       │   └── example_widget.py      # Example custom widget for PyUI
-│       ├── layouts/
-│       │   └── __init__.py            # Layout patterns for PyUI
-│       └── utils/
-│           └── __init__.py            # Utility functions for PyUI
+│       ├── __init__.py                # PyUI package with widget registry
+│       ├── application_base.py        # Base class for PyUI applications
+│       └── widgets/
+│           ├── __init__.py            # Widget subpackage
+│           └── example_widget.py      # StyledButton and widget registry
 │
 ├── sequencer_ui/
-│   ├── __init__.py                    # Marks the package
-│   ├── sequencer_app.py               # Main Sequencer UI application shell
-│   ├── sequence_editor.py             # UI logic for editing sequences
-│   ├── file_manager.py                # Handles saving/loading sequences
+│   ├── __init__.py                    # Sequencer UI package
+│   ├── sequencer_app.py               # Main application with execution control UI
+│   ├── sequence_editor.py             # Sequence editing with drag-and-drop
+│   ├── sequence_data_model.py         # Data models and validation
+│   ├── file_manager.py                # JSON/YAML file persistence
+│   ├── sequence_executor.py           # Execution engine with threading
+│   ├── accelerator_control_interface.py # Mock accelerator interface
 │   └── step_widgets/
-│       └── __init__.py                # Step widget subpackage for sequence steps
+│       ├── __init__.py                # Step widget registry
+│       ├── step_widget_base.py        # Base class for step widgets
+│       ├── delay_widget.py            # Delay step widget
+│       ├── log_message_widget.py      # Log message step widget
+│       ├── run_diagnostic_widget.py   # Diagnostic step widget
+│       ├── set_parameter_widget.py    # Parameter setting widget
+│       └── wait_for_event_widget.py   # Event waiting widget
 │
-├── tests/
-│   ├── test_application_base.py       # Unit test for PyUI application base
-│   └── test_example_widget.py         # Unit test for example widget
+├── demo_sequences/
+│   └── beam_setup_demo.json           # Demo sequence for testing execution
 │
-├── PRD.md                            # Product Requirements Document (this file)
-└── venv/                             # Python virtual environment (not versioned)
+├── tests/                             # Comprehensive test suite (133 tests)
+│   ├── test_*.py                      # Unit tests for all components
+│
+├── run_sequencer.py                   # Easy launcher with demo support
+├── Readme.md                          # This documentation file
+└── venv/                              # Python virtual environment
 ```
 
 **Key Points:**
@@ -360,50 +409,122 @@ This section outlines a phased approach for developing the PyUI framework and th
 
 * **Development Steps:**  
   1. **Sequence Data Model:** ✅ **COMPLETE**
-     * ✅ Complete SequenceData and SequenceStep classes with validation
-     * ✅ Comprehensive data structures with metadata, parameters, and status tracking
-     * ✅ JSON serialization/deserialization with data integrity validation
+     * ✅ **Core Data Structures:** SequenceData, SequenceStep, SequenceMetadata classes
+     * ✅ **Type Safety:** StepType and StepStatus enums with validation framework
+     * ✅ **Step Types:** SetParameter, WaitForEvent, Delay, RunDiagnostic, LogMessage
+     * ✅ **Validation System:** Step-specific parameter validation with detailed error reporting
+     * ✅ **Factory Functions:** Convenient step creation with `create_*_step()` methods
+     * ✅ **Serialization:** JSON/dictionary conversion with data integrity preservation
+     * ✅ **Execution Tracking:** Progress statistics, status management, timing data
+     * ✅ **23 comprehensive tests** covering all functionality (534 lines of code)
      
-  2. **Step Widgets Integration (PyUI & Sequencer UI):** ✅ **COMPLETE**
-     * ✅ StepWidgetBase abstract class with standardized interface
-     * ✅ Five complete step widgets: SetParameter, WaitForEvent, Delay, RunDiagnostic, LogMessage
-     * ✅ Dynamic widget registry with automatic loading and parameter synchronization
+  2. **Step Widgets Integration:** ✅ **COMPLETE**
+     * ✅ **Abstract Architecture:** StepWidgetBase in PyUI with specialized base classes
+     * ✅ **Signal System:** parameters_changed and validation_changed signals
+     * ✅ **UI Helpers:** CERN-themed styling with blue color scheme and form controls
+     * ✅ **Five Step Widgets:** Complete implementations with parameter validation
+       - SetParameterWidget: Type selection, value validation, units support
+       - WaitForEventWidget: Event sources, timeout config, retry settings  
+       - DelayWidget: Multiple time units, quick buttons, precision settings
+       - RunDiagnosticWidget: Test categories, parameter tables, failure handling
+       - LogMessageWidget: Level selection, color-coded preview, categorization
+     * ✅ **Widget Registry:** Dynamic registration, factory creation, runtime discovery
+     * ✅ **20 comprehensive tests** covering widget functionality (1,423 lines of code)
      
   3. **Sequence Editor Logic:** ✅ **COMPLETE**
-     * ✅ Complete SequenceEditor with split-panel layout and drag-and-drop reordering
-     * ✅ Real-time parameter editing with validation and error reporting
-     * ✅ Signal-based architecture for loose coupling and event handling
+     * ✅ **Professional UI:** Split-panel layout (40% step list, 60% step editor)
+     * ✅ **Step Management:** Add, remove, duplicate, reorder operations with confirmation
+     * ✅ **Drag-and-Drop:** Custom StepListWidget with visual feedback and index tracking
+     * ✅ **Real-time Editing:** Dynamic parameter synchronization with widget caching
+     * ✅ **Signal Architecture:** sequence_changed, sequence_loaded, step_selected events
+     * ✅ **Context Menus:** Right-click operations with keyboard shortcuts
+     * ✅ **Validation Integration:** Real-time error highlighting and user feedback
+     * ✅ **Main App Integration:** Toolbar, menu system, properties panel updates
+     * ✅ **Complete implementation** with professional styling (696 lines of code)
      
   4. **Local File Persistence:** ✅ **COMPLETE**
-     * ✅ Complete FileManager with JSON/YAML support and PyQt file dialogs
-     * ✅ Recent files management, automatic backups, and error recovery
-     * ✅ Full integration with File menu (New, Open, Save, Save As, Export, Recent Files)
+     * ✅ **Multi-format Support:** JSON (always) and YAML (optional with PyYAML)
+     * ✅ **File Operations:** Native PyQt dialogs with proper filters and validation
+     * ✅ **Backup System:** Automatic backups with timestamps, keeping last 5 versions
+     * ✅ **Recent Files:** Persistent storage using QSettings with dynamic menu updates
+     * ✅ **Error Recovery:** Graceful handling of corrupted files and validation failures
+     * ✅ **Menu Integration:** Complete File menu (New, Open, Save, Save As, Export, Recent)
+     * ✅ **Settings Management:** Cross-platform compatibility with automatic cleanup
+     * ✅ **User Experience:** Status feedback, modification tracking, window title updates
+     * ✅ **12 comprehensive tests** covering file operations (468 lines of code)
      
-  5. **Testing:** ✅ **COMPLETE**
-     * ✅ 85 unit tests with 100% pass rate covering all components
-     * ✅ Comprehensive integration tests for file operations and data integrity
-     * ✅ Error handling and edge case validation
+  5. **Testing & Validation:** ✅ **COMPLETE**
+     * ✅ **85 unit tests** with 100% pass rate across all components
+     * ✅ **Integration Testing:** Complete save/load cycles with data integrity validation
+     * ✅ **Error Handling:** Comprehensive error scenarios and edge case testing
+     * ✅ **Performance Testing:** Efficient operations with minimal memory usage
+     * ✅ **Roundtrip Testing:** JSON/YAML serialization data integrity verification
 
-#### **Milestone 3: Sequence Execution & Status Display**
+#### **Milestone 3: Sequence Execution & Status Display** ✅ **COMPLETE**
 
 **Goal:** Allow users to initiate sequence execution and view its basic status.
 
+**Status:** 100% Complete - All development steps implemented and tested
+
 * **Development Steps:**  
-  1. **Accelerator Control System Interface (Mock):**  
-     * Create a mock AcceleratorControlSystemInterface module in Python.  
-     * Implement placeholder methods like setParameter(name, value), waitForEvent(event\_name), delay(seconds). These methods will initially just print to console or simulate a delay.  
-  2. **Sequence Executor Logic:**  
-     * Develop SequenceExecutor component in Sequencer UI responsible for iterating through the in-memory sequence steps.  
-     * For each step, call the corresponding method on the mock AcceleratorControlSystemInterface.  
-     * Implement basic error handling for execution (e.g., if a parameter is missing).  
-  3. **Execution Control & Status Display:**  
-     * Connect the "Run" button in Sequencer UI to trigger the SequenceExecutor.  
-     * Implement a PyQt element (e.g., a QLabel in the status bar) to display the current status of execution (e.g., "Executing Step 1: Set Parameter X", "Sequence Completed", "Execution Failed").  
-     * Consider using PyQt's signal/slot mechanism for the SequenceExecutor to emit status updates to the UI.  
-  4. **Demo & Documentation Update:**  
-     * Create a small demo sequence file for testing the execution.  
-     * Update PyUI and Sequencer UI documentation with basic usage instructions for creating, saving, loading, and running a sequence.  
-  5. **Testing:**  
-     * Write unit tests for SequenceExecutor logic with the mock interface.  
-     * Integration tests for pressing "Run" and observing status updates.
+  1. **Accelerator Control System Interface (Mock):** ✅ **COMPLETE**
+     * ✅ **Complete Mock Interface:** Full simulation of CERN accelerator control system
+     * ✅ **Five Core Methods:** set_parameter(), wait_for_event(), delay(), run_diagnostic(), log_message()
+     * ✅ **Realistic Simulation:** Random delays (100-500ms), parameter validation, range checking
+     * ✅ **Mock Data Management:** Pre-populated parameters, event registry, diagnostic results
+     * ✅ **Status Enums:** ControlSystemStatus and LogLevel for consistent responses
+     * ✅ **Event Simulation:** Probabilistic event occurrence (10% per check) with timeout handling
+     * ✅ **Diagnostic Testing:** 85% success rate with detailed pass/fail reporting (1-5s execution)
+     * ✅ **Memory Management:** Log buffer (1000 entries), parameter storage, result persistence
+     * ✅ **23 comprehensive unit tests** covering all functionality (575 lines of code)
+     
+  2. **Sequence Executor Logic:** ✅ **COMPLETE**
+     * ✅ **Multi-Mode Execution:** Normal, Step-by-Step, and Dry-Run modes
+     * ✅ **Threading Architecture:** SequenceExecutionThread for non-blocking execution
+     * ✅ **Execution States:** IDLE, RUNNING, PAUSED, COMPLETED, FAILED with state management
+     * ✅ **12 PyQt Signals:** Comprehensive communication (execution, step, progress signals)
+     * ✅ **Step Integration:** Direct mapping from all 5 step types to interface methods
+     * ✅ **Validation Framework:** Pre-execution and runtime validation with detailed errors
+     * ✅ **Control Operations:** Start, stop, pause, resume with proper state transitions
+     * ✅ **Statistics Tracking:** Execution timing, step counts, success/failure rates
+     * ✅ **Error Handling:** Continue-on-error mode, timeout management, exception capture
+     * ✅ **25 comprehensive unit tests** covering execution engine (696 lines of code)
+     
+  3. **Execution Control & Status Display:** ✅ **COMPLETE**
+     * ✅ **UI Integration:** Complete SequenceExecutor integration with main application
+     * ✅ **Execution Status Panel:** Bottom panel with vertical splitter (75%/25% layout)
+     * ✅ **Progress Tracking:** Visual progress bar with percentage and step counts
+     * ✅ **Status Indicators:** Color-coded status (Green: RUNNING/COMPLETED, Red: STOPPED/FAILED, Orange: PAUSED)
+     * ✅ **Current Step Display:** Real-time step descriptions with truncation
+     * ✅ **Execution Statistics:** Total/Success/Failed counters with live updates
+     * ✅ **Control Interface:** Run (F5), Stop (F6), Pause (Ctrl+P), Resume (Ctrl+R) buttons
+     * ✅ **Signal Handlers:** 12 comprehensive signal handlers for real-time UI updates
+     * ✅ **Menu Integration:** Pause/Resume menu actions with keyboard shortcuts
+     * ✅ **Window Enhancements:** Increased minimum size (1200x800) for better UX
+     * ✅ **Thread Safety:** Responsive UI during execution with proper signal handling
+     
+  4. **Demo & Documentation Update:** ✅ **COMPLETE**
+     * ✅ **Demo Sequence:** 11-step comprehensive sequence showcasing all step types
+     * ✅ **Realistic Operations:** Beam energy (7 TeV), magnet current (150A), RF frequency (400.789 MHz)
+     * ✅ **Command-line Interface:** Enhanced run script with argparse support
+     * ✅ **Demo Loading:** `python run_sequencer.py --demo` for instant demonstration
+     * ✅ **File Loading:** `python run_sequencer.py --load file.json` for specific sequences
+     * ✅ **Documentation Updates:** Complete Basic Usage Guide in README
+     * ✅ **Keyboard Shortcuts:** Comprehensive reference (F5, F6, Ctrl+P, Ctrl+R, Ctrl+N, Ctrl+O, Ctrl+S)
+     * ✅ **Project Structure:** Updated directory listing reflecting current implementation
+     * ✅ **User Experience:** Professional startup messages with error handling and guidance
+     
+  5. **Integration & Testing:** ✅ **COMPLETE**
+     * ✅ **133 total tests** passing with no regressions across entire project
+     * ✅ **Integration Testing:** Complete execution pipeline from UI to mock interface
+     * ✅ **Manual Validation:** Full run/stop/pause/resume cycle testing
+     * ✅ **Error Scenarios:** Validation failures, execution errors, timeout handling
+     * ✅ **Performance Testing:** UI responsiveness during execution, memory management
+     * ✅ **Demo Validation:** All demo sequences load and execute successfully
+
+**Key Achievements:**
+- **Complete Execution Pipeline:** Full sequence execution from creation to real-time monitoring with simulated accelerator interface
+- **Professional UI:** Execution status panel with progress bars, statistics, color-coded indicators, and responsive controls
+- **Real-time Control:** Run/Stop/Pause/Resume functionality with threading support and immediate UI feedback
+- **Production Ready:** Comprehensive demo sequences, documentation, and 133 passing tests ensuring robust operation
 
